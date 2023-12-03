@@ -59,17 +59,45 @@ fn move_cursor(stdout: &mut RawTerminal<Stdout>, x: usize, y: usize) -> Result<(
     Ok(())
 }
 
+fn parse_file(filepath: &str) -> Vec<Todo> {
+    let mut todos = Vec::<Todo>::new();
+
+    match fs::read_to_string(filepath) {
+        Ok(content) => {
+            for line in content.split('\n') {
+                if line.starts_with("- [") {
+                    let complete = line.chars().nth(3).unwrap_or(' ') == 'x';
+                    let text = line[6..].to_string();
+                    todos.push(Todo { text, complete })
+                } else {
+                    continue;
+                }
+            }
+        }
+        Err(err) => eprintln!("{err}"),
+    };
+
+    todos
+}
+
+fn save_file(todos: &Vec<Todo>, filepath: &str) {
+    let mut file = fs::File::create(filepath).unwrap();
+
+    write!(&mut file, "# TODO\n").unwrap();
+
+    for todo in todos {
+        let status = if todo.complete { 'x' } else { ' ' };
+        write!(&mut file, "\n- [{status}] {text}", text = todo.text).unwrap();
+    }
+}
+
 fn main() {
     let args: Vec<String> = env::args().collect();
     let todo_path = args.get(1).unwrap();
 
     println!("Reading todos: {todo_path}");
 
-    let todo_json: String = fs::read_to_string(&todo_path).unwrap_or("[]".to_string());
-
-    let mut todos: Vec<Todo> = serde_json::from_str(todo_json.as_str())
-        .map_err(|err| eprintln!("Error: Cant parse todo file: {err}"))
-        .unwrap();
+    let mut todos = parse_file(todo_path);
 
     let stdin = io::stdin();
     let mut stdout = io::stdout()
@@ -265,7 +293,6 @@ fn main() {
             .map_err(|err| eprintln!("Error: cant move the cursor: {err}"))
             .unwrap();
 
-        let new_todo_json = serde_json::to_string(&todos).unwrap();
-        fs::write(&todo_path, new_todo_json).unwrap();
+        save_file(&todos, todo_path);
     }
 }
