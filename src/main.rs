@@ -131,6 +131,9 @@ fn main() {
                             .map_err(|err| format!("Cant write to stdout: {err}"))
                             .unwrap();
                         stdout.flush().unwrap();
+                        move_cursor(&mut stdout, 1, 1)
+                            .map_err(|err| eprintln!("Error: cant move the cursor: {err}"))
+                            .unwrap();
                         break;
                     }
                     Key::Char('d') => {
