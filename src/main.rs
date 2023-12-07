@@ -174,8 +174,8 @@ fn main() {
                     Key::Char('o') => {
                         cursor_x = 1;
                         cursor_y = 1;
-                        todos.sort_by(|x, y| {
-                            if x.complete || y.complete {
+                        todos.sort_by(|x, _| {
+                            if x.complete {
                                 Ordering::Less
                             } else {
                                 Ordering::Greater
